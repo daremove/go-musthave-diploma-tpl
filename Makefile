@@ -6,7 +6,7 @@ SERVER_BINARY_NAME=gophermart
 ACCRUAL_SOURCE_BIN_PATH=./cmd/accrual/accrual_darwin_arm64
 ACCRUAL_BINARY_NAME=accrual
 
-.PHONY: all build run clean stop
+.PHONY: all build run clean stop migrate-up-% migrate-down-%
 
 all: build
 
@@ -32,3 +32,10 @@ stop:
 	@-pkill -f $(SERVER_BINARY_NAME)
 	@-pkill -f $(ACCRUAL_BINARY_NAME)
 
+migrate-up-%:
+	@echo "Migrating up $*"
+	@migrate -path ./internal/database/migrations -database postgres://localhost:5432/gophermart?sslmode=disable up $*
+
+migrate-down-%:
+	@echo "Migrating down $*"
+	@migrate -path ./internal/database/migrations -database postgres://localhost:5432/gophermart?sslmode=disable down $*

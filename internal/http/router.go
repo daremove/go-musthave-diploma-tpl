@@ -1,8 +1,10 @@
 package router
 
 import (
-	"context"
 	"github.com/daremove/go-musthave-diploma-tpl/tree/master/internal/logger"
+	"github.com/daremove/go-musthave-diploma-tpl/tree/master/internal/middlewares"
+	"github.com/daremove/go-musthave-diploma-tpl/tree/master/internal/models"
+	"github.com/daremove/go-musthave-diploma-tpl/tree/master/internal/services"
 	"github.com/go-chi/chi/v5"
 	"log"
 	"net/http"
@@ -13,20 +15,23 @@ type Config struct {
 }
 
 type Router struct {
-	config Config
+	config      Config
+	authService services.AuthService
+	jwtService  services.JWTService
 }
 
-func New(config Config) *Router {
-	return &Router{config}
+func New(config Config, authService services.AuthService, jwtService services.JWTService) *Router {
+	return &Router{config, authService, jwtService}
 }
 
 func stub(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Stub"))
 }
 
-func (router *Router) get(ctx context.Context) chi.Router {
+func (router *Router) get() chi.Router {
 	r := chi.NewRouter()
 
+	r.Use(middlewares.ServiceInjectorMiddleware(&router.authService, &router.jwtService))
 	r.Use(logger.RequestLogger)
 	//r.Use(middleware.NewCompressor(flate.DefaultCompression).Handler)
 	//r.Use(dataintergity.NewMiddleware(dataintergity.DataIntegrityMiddlewareConfig{
@@ -35,10 +40,10 @@ func (router *Router) get(ctx context.Context) chi.Router {
 	//r.Use(gzipm.GzipMiddleware)
 
 	r.Route("/api/user", func(r chi.Router) {
-		r.Post("/register", stub)
+		r.Post("/register", middlewares.JSONMiddleware[models.User](Register))
 		r.Post("/login", stub)
 
-		r.Post("/orders", stub)
+		r.Post("/orders", middlewares.JWTMiddleware(stub))
 		r.Get("/orders", stub)
 
 		r.Get("/balance", stub)
@@ -50,6 +55,6 @@ func (router *Router) get(ctx context.Context) chi.Router {
 	return r
 }
 
-func (router *Router) Run(ctx context.Context) {
-	log.Fatal(http.ListenAndServe(router.config.Endpoint, router.get(ctx)))
+func (router *Router) Run() {
+	log.Fatal(http.ListenAndServe(router.config.Endpoint, router.get()))
 }

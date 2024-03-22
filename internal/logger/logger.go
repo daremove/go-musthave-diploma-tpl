@@ -62,7 +62,7 @@ func RequestLogger(next http.Handler) http.Handler {
 		Log.Info("Request processed",
 			zap.String("URI", r.RequestURI),
 			zap.String("method", r.Method),
-			zap.Duration("duration", duration*time.Millisecond),
+			zap.Duration("duration", duration),
 			zap.Int("status", wrappedWriter.statusCode),
 		)
 	})

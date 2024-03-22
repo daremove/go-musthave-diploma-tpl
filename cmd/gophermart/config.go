@@ -11,6 +11,7 @@ type Config struct {
 	dsn             string
 	logLevel        string
 	env             string
+	authSecretKey   string
 }
 
 func NewConfig() Config {
@@ -20,6 +21,7 @@ func NewConfig() Config {
 		dsn             string
 		logLevel        string
 		env             string
+		authSecretKey   string
 	)
 
 	flag.StringVar(&endpoint, "a", "localhost:8090", "address and port to run server")
@@ -51,11 +53,22 @@ func NewConfig() Config {
 		env = "production"
 	}
 
+	if secret := os.Getenv("AUTH_SECRET_KEY"); secret != "" {
+		authSecretKey = secret
+	} else {
+		if env == "production" {
+			panic("Auth secret key should be set for production environment")
+		}
+
+		authSecretKey = "development-key"
+	}
+
 	return Config{
 		endpoint,
 		accrualEndpoint,
 		dsn,
 		logLevel,
 		env,
+		authSecretKey,
 	}
 }
