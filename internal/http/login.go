@@ -9,7 +9,8 @@ import (
 	"net/http"
 )
 
-func Register(w http.ResponseWriter, r *http.Request) {
+// todo add invalidation prev token
+func Login(w http.ResponseWriter, r *http.Request) {
 	data := middlewares.GetParsedJSONData[models.User](w, r)
 	authService := middlewares.GetServiceFromContext[services.AuthService](w, r, middlewares.AuthServiceKey)
 	jwtService := middlewares.GetServiceFromContext[services.JWTService](w, r, middlewares.JwtServiceKey)
@@ -19,17 +20,21 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := authService.Register(r.Context(), data); err != nil {
-		if errors.Is(err, services.ErrUserIsAlreadyRegistered) {
-			http.Error(w, "User is already registered", http.StatusConflict)
+	if err := authService.Login(r.Context(), data); err != nil {
+		if errors.Is(err, services.ErrUserIsNotExist) {
+			http.Error(w, fmt.Sprintf("Login %s is not exist", *data.Login), http.StatusUnauthorized)
 			return
 		}
 
-		http.Error(w, fmt.Sprintf("Error occurred during registration: %s", err.Error()), http.StatusInternalServerError)
+		if errors.Is(err, services.ErrPasswordIsIncorrect) {
+			http.Error(w, "Password is not correct", http.StatusUnauthorized)
+			return
+		}
+
+		http.Error(w, fmt.Sprintf("Error occurred during login: %s", err.Error()), http.StatusInternalServerError)
 		return
 	}
 
-	// todo think about atomicity
 	token, err := jwtService.GenerateJWT(*data.Login)
 
 	if err != nil {

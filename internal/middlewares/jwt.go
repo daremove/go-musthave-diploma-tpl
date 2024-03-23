@@ -8,8 +8,28 @@ import (
 	"strings"
 )
 
-func JWTMiddleware(next http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+type AuthMiddlewareConfig struct {
+	excludePaths []string
+}
+
+func AuthMiddleware() *AuthMiddlewareConfig {
+	return &AuthMiddlewareConfig{}
+}
+
+func (a *AuthMiddlewareConfig) WithExcludedPaths(paths ...string) *AuthMiddlewareConfig {
+	a.excludePaths = paths
+	return a
+}
+
+func (a *AuthMiddlewareConfig) Middleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		for _, path := range a.excludePaths {
+			if strings.HasPrefix(r.URL.Path, path) {
+				next.ServeHTTP(w, r)
+				return
+			}
+		}
+
 		authService := GetServiceFromContext[services.AuthService](w, r, AuthServiceKey)
 		jwtService := GetServiceFromContext[services.JWTService](w, r, JwtServiceKey)
 
@@ -40,7 +60,7 @@ func JWTMiddleware(next http.HandlerFunc) http.HandlerFunc {
 				return
 			}
 
-			http.Error(w, fmt.Sprintf("Error occurred during validating token: %s", err.Error()), http.StatusInternalServerError)
+			http.Error(w, fmt.Sprintf("Error occurred during validating token: %s", err.Error()), http.StatusUnauthorized)
 			return
 		}
 
@@ -51,18 +71,16 @@ func JWTMiddleware(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		isValid, err := authService.IsLoginValid(r.Context(), login)
+		if err := authService.IsLoginValid(r.Context(), login); err != nil {
+			if errors.Is(err, services.ErrUserIsNotExist) {
+				http.Error(w, fmt.Sprintf("User login %s doesn't exist", login), http.StatusConflict)
+				return
+			}
 
-		if err != nil {
 			http.Error(w, fmt.Sprintf("Error occurred during validation user login: %s", err.Error()), http.StatusInternalServerError)
 			return
 		}
 
-		if !isValid {
-			http.Error(w, fmt.Sprintf("User login %s doesn't exist", login), http.StatusConflict)
-			return
-		}
-
 		next.ServeHTTP(w, r)
-	}
+	})
 }

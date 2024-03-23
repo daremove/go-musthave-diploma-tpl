@@ -31,8 +31,14 @@ func stub(w http.ResponseWriter, r *http.Request) {
 func (router *Router) get() chi.Router {
 	r := chi.NewRouter()
 
-	r.Use(middlewares.ServiceInjectorMiddleware(&router.authService, &router.jwtService))
-	r.Use(logger.RequestLogger)
+	r.Use(
+		middlewares.ServiceInjectorMiddleware(&router.authService, &router.jwtService),
+		logger.RequestLogger,
+		middlewares.AuthMiddleware().WithExcludedPaths(
+			"/api/user/register",
+			"/api/user/login",
+		).Middleware,
+	)
 	//r.Use(middleware.NewCompressor(flate.DefaultCompression).Handler)
 	//r.Use(dataintergity.NewMiddleware(dataintergity.DataIntegrityMiddlewareConfig{
 	//	SigningKey: router.config.SigningKey,
@@ -40,10 +46,10 @@ func (router *Router) get() chi.Router {
 	//r.Use(gzipm.GzipMiddleware)
 
 	r.Route("/api/user", func(r chi.Router) {
-		r.Post("/register", middlewares.JSONMiddleware[models.User](Register))
-		r.Post("/login", stub)
+		r.With(middlewares.JSONMiddleware[models.User]).Post("/register", Register)
+		r.With(middlewares.JSONMiddleware[models.User]).Post("/login", Login)
 
-		r.Post("/orders", middlewares.JWTMiddleware(stub))
+		r.Post("/orders", stub)
 		r.Get("/orders", stub)
 
 		r.Get("/balance", stub)

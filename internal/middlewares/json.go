@@ -19,8 +19,8 @@ type RequestWithModel[Model ModelParameter] struct {
 	data Model
 }
 
-func JSONMiddleware[Model ModelParameter](next http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func JSONMiddleware[Model ModelParameter](next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Content-Type") != "application/json" {
 			http.Error(w, "Content-Type is not application/json", http.StatusUnsupportedMediaType)
 			return
@@ -40,7 +40,7 @@ func JSONMiddleware[Model ModelParameter](next http.HandlerFunc) http.HandlerFun
 		}
 
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), ParsedDataField, parsedData)))
-	}
+	})
 }
 
 func GetParsedJSONData[Model ModelParameter](w http.ResponseWriter, r *http.Request) Model {

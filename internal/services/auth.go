@@ -3,12 +3,15 @@ package services
 import (
 	"context"
 	"errors"
+	"github.com/daremove/go-musthave-diploma-tpl/tree/master/internal/database"
 	"github.com/daremove/go-musthave-diploma-tpl/tree/master/internal/models"
 	"golang.org/x/crypto/bcrypt"
 )
 
 var (
-	ErrUserIsAlreadyRegistered = errors.New("ErrUserIsAlreadyRegistered")
+	ErrUserIsAlreadyRegistered = errors.New("user is already registered")
+	ErrUserIsNotExist          = errors.New("user is not exist")
+	ErrPasswordIsIncorrect     = errors.New("password is incorrect")
 )
 
 type AuthService struct {
@@ -16,9 +19,9 @@ type AuthService struct {
 }
 
 type Storage interface {
-	SaveUser(ctx context.Context, login, hash string) error
+	SaveUser(ctx context.Context, user models.UserWithHash) error
 
-	FindUser(ctx context.Context, login string) (*models.User, error)
+	FindUser(ctx context.Context, login string) (*models.UserWithHash, error)
 }
 
 func NewAuthService(storage Storage) *AuthService {
@@ -32,24 +35,49 @@ func (auth *AuthService) Register(ctx context.Context, user models.User) error {
 		return err
 	}
 
-	if err := auth.storage.SaveUser(ctx, *user.Login, string(hashedPassword)); err != nil {
-		// todo check uniq constraint from db
-		return ErrUserIsAlreadyRegistered
+	if err := auth.storage.SaveUser(ctx, models.UserWithHash{Login: *user.Login, Hash: string(hashedPassword)}); err != nil {
+		if errors.Is(err, database.ErrDuplicateUser) {
+			return ErrUserIsAlreadyRegistered
+		}
+
+		return err
 	}
 
 	return nil
 }
 
-func (auth *AuthService) IsLoginValid(ctx context.Context, login string) (bool, error) {
+func (auth *AuthService) Login(ctx context.Context, user models.User) error {
+	u, err := auth.storage.FindUser(ctx, *user.Login)
+
+	if err != nil {
+		return err
+	}
+
+	if u == nil {
+		return ErrUserIsNotExist
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(u.Hash), []byte(*user.Password)); err != nil {
+		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
+			return ErrPasswordIsIncorrect
+		}
+
+		return err
+	}
+
+	return nil
+}
+
+func (auth *AuthService) IsLoginValid(ctx context.Context, login string) error {
 	user, err := auth.storage.FindUser(ctx, login)
 
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	if user == nil {
-		return false, nil
+		return ErrUserIsNotExist
 	}
 
-	return true, nil
+	return nil
 }

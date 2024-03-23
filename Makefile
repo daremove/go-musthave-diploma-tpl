@@ -19,7 +19,7 @@ run: stop build
 	@echo "Running the server..."
 	@touch $(BUILD_DIR)/$(SERVER_BINARY_NAME).log
 	@touch $(BUILD_DIR)/$(ACCRUAL_BINARY_NAME).log
-	@LOG_LEVEL="info" ENV="development" $(BUILD_DIR)/$(SERVER_BINARY_NAME) > $(BUILD_DIR)/$(SERVER_BINARY_NAME).log 2>&1 &
+	@LOG_LEVEL="info" ENV="development" DATABASE_URI="postgresql://localhost:5432/gophermart" $(BUILD_DIR)/$(SERVER_BINARY_NAME) > $(BUILD_DIR)/$(SERVER_BINARY_NAME).log 2>&1 &
 	@$(BUILD_DIR)/$(ACCRUAL_BINARY_NAME) > $(BUILD_DIR)/$(ACCRUAL_BINARY_NAME).log 2>&1 &
 	@tail -f $(BUILD_DIR)/$(SERVER_BINARY_NAME).log $(BUILD_DIR)/$(ACCRUAL_BINARY_NAME).log
 
