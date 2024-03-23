@@ -5,7 +5,8 @@ type User struct {
 	Password *string `json:"password"`
 }
 
-type UserWithHash struct {
+type UserDB struct {
+	ID    string
 	Login string
 	Hash  string
 }

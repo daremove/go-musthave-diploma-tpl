@@ -1,12 +1,16 @@
 package middlewares
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"github.com/daremove/go-musthave-diploma-tpl/tree/master/internal/models"
 	"github.com/daremove/go-musthave-diploma-tpl/tree/master/internal/services"
 	"net/http"
 	"strings"
 )
+
+const userField = "userField"
 
 type AuthMiddlewareConfig struct {
 	excludePaths []string
@@ -71,7 +75,9 @@ func (a *AuthMiddlewareConfig) Middleware(next http.Handler) http.Handler {
 			return
 		}
 
-		if err := authService.IsLoginValid(r.Context(), login); err != nil {
+		user, err := authService.GetUser(r.Context(), login)
+
+		if err != nil {
 			if errors.Is(err, services.ErrUserIsNotExist) {
 				http.Error(w, fmt.Sprintf("User login %s doesn't exist", login), http.StatusConflict)
 				return
@@ -81,6 +87,17 @@ func (a *AuthMiddlewareConfig) Middleware(next http.Handler) http.Handler {
 			return
 		}
 
-		next.ServeHTTP(w, r)
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), userField, user)))
 	})
+}
+
+func GetUserFromContext(w http.ResponseWriter, r *http.Request) *models.UserDB {
+	user, ok := r.Context().Value(userField).(*models.UserDB)
+
+	if !ok {
+		http.Error(w, "Could not retrieve user from context", http.StatusInternalServerError)
+		return nil
+	}
+
+	return user
 }

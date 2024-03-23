@@ -8,7 +8,7 @@ import (
 	"net/http"
 )
 
-const ParsedDataField = "parsedData"
+const parsedJSONDataField = "parsedJSONDataField"
 
 type ModelParameter interface {
 	interface{} | []interface{}
@@ -39,12 +39,12 @@ func JSONMiddleware[Model ModelParameter](next http.Handler) http.Handler {
 			return
 		}
 
-		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), ParsedDataField, parsedData)))
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), parsedJSONDataField, parsedData)))
 	})
 }
 
 func GetParsedJSONData[Model ModelParameter](w http.ResponseWriter, r *http.Request) Model {
-	data, ok := r.Context().Value(ParsedDataField).(Model)
+	data, ok := r.Context().Value(parsedJSONDataField).(Model)
 
 	if !ok {
 		http.Error(w, "Could not retrieve data from context", http.StatusInternalServerError)

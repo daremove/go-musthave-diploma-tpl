@@ -21,6 +21,7 @@ const (
 	`
 	SelectUserQuery = `
 		SELECT
+		    id,
 			login,
 			hash
 		FROM
@@ -30,7 +31,7 @@ const (
 	`
 )
 
-func (d *Database) SaveUser(ctx context.Context, user models.UserWithHash) error {
+func (d *Database) CreateUser(ctx context.Context, user models.UserDB) error {
 	if _, err := d.db.Exec(ctx, InsertUserQuery, user.Login, user.Hash); err != nil {
 		var e *pgconn.PgError
 		if errors.As(err, &e) && e.Code == pgerrcode.UniqueViolation {
@@ -43,15 +44,16 @@ func (d *Database) SaveUser(ctx context.Context, user models.UserWithHash) error
 	return nil
 }
 
-func (d *Database) FindUser(ctx context.Context, login string) (*models.UserWithHash, error) {
-	user := &models.UserWithHash{}
+func (d *Database) FindUser(ctx context.Context, login string) (*models.UserDB, error) {
+	user := &models.UserDB{}
 
-	if err := d.db.QueryRow(ctx, SelectUserQuery, login).Scan(&user.Login, &user.Hash); err != nil {
+	if err := d.db.QueryRow(ctx, SelectUserQuery, login).Scan(&user.ID, &user.Login, &user.Hash); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
 		}
 
 		return nil, err
 	}
+
 	return user, nil
 }

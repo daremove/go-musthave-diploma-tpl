@@ -15,13 +15,19 @@ type Config struct {
 }
 
 type Router struct {
-	config      Config
-	authService services.AuthService
-	jwtService  services.JWTService
+	config       Config
+	authService  services.AuthService
+	jwtService   services.JWTService
+	orderService services.OrderService
 }
 
-func New(config Config, authService services.AuthService, jwtService services.JWTService) *Router {
-	return &Router{config, authService, jwtService}
+func New(
+	config Config,
+	authService services.AuthService,
+	jwtService services.JWTService,
+	orderService services.OrderService,
+) *Router {
+	return &Router{config, authService, jwtService, orderService}
 }
 
 func stub(w http.ResponseWriter, r *http.Request) {
@@ -32,7 +38,11 @@ func (router *Router) get() chi.Router {
 	r := chi.NewRouter()
 
 	r.Use(
-		middlewares.ServiceInjectorMiddleware(&router.authService, &router.jwtService),
+		middlewares.ServiceInjectorMiddleware(
+			&router.authService,
+			&router.jwtService,
+			&router.orderService,
+		),
 		logger.RequestLogger,
 		middlewares.AuthMiddleware().WithExcludedPaths(
 			"/api/user/register",
@@ -49,7 +59,7 @@ func (router *Router) get() chi.Router {
 		r.With(middlewares.JSONMiddleware[models.User]).Post("/register", Register)
 		r.With(middlewares.JSONMiddleware[models.User]).Post("/login", Login)
 
-		r.Post("/orders", stub)
+		r.With(middlewares.TextMiddleware).Post("/orders", PostOrders)
 		r.Get("/orders", stub)
 
 		r.Get("/balance", stub)

@@ -29,5 +29,6 @@ func main() {
 		router.Config{Endpoint: config.endpoint},
 		*services.NewAuthService(db),
 		*services.NewJWTService(config.authSecretKey),
+		*services.NewOrderService(db),
 	).Run()
 }

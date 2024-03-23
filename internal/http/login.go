@@ -10,6 +10,7 @@ import (
 )
 
 // todo add invalidation prev token
+// todo remove duplication
 func Login(w http.ResponseWriter, r *http.Request) {
 	data := middlewares.GetParsedJSONData[models.User](w, r)
 	authService := middlewares.GetServiceFromContext[services.AuthService](w, r, middlewares.AuthServiceKey)

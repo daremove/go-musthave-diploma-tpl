@@ -15,16 +15,16 @@ var (
 )
 
 type AuthService struct {
-	storage Storage
+	storage AuthStorage
 }
 
-type Storage interface {
-	SaveUser(ctx context.Context, user models.UserWithHash) error
+type AuthStorage interface {
+	CreateUser(ctx context.Context, user models.UserDB) error
 
-	FindUser(ctx context.Context, login string) (*models.UserWithHash, error)
+	FindUser(ctx context.Context, login string) (*models.UserDB, error)
 }
 
-func NewAuthService(storage Storage) *AuthService {
+func NewAuthService(storage AuthStorage) *AuthService {
 	return &AuthService{storage}
 }
 
@@ -35,7 +35,7 @@ func (auth *AuthService) Register(ctx context.Context, user models.User) error {
 		return err
 	}
 
-	if err := auth.storage.SaveUser(ctx, models.UserWithHash{Login: *user.Login, Hash: string(hashedPassword)}); err != nil {
+	if err := auth.storage.CreateUser(ctx, models.UserDB{Login: *user.Login, Hash: string(hashedPassword)}); err != nil {
 		if errors.Is(err, database.ErrDuplicateUser) {
 			return ErrUserIsAlreadyRegistered
 		}
@@ -68,16 +68,16 @@ func (auth *AuthService) Login(ctx context.Context, user models.User) error {
 	return nil
 }
 
-func (auth *AuthService) IsLoginValid(ctx context.Context, login string) error {
+func (auth *AuthService) GetUser(ctx context.Context, login string) (*models.UserDB, error) {
 	user, err := auth.storage.FindUser(ctx, login)
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if user == nil {
-		return ErrUserIsNotExist
+		return nil, ErrUserIsNotExist
 	}
 
-	return nil
+	return user, nil
 }
