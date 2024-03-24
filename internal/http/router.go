@@ -59,8 +59,8 @@ func (router *Router) get() chi.Router {
 		r.With(middlewares.JSONMiddleware[models.User]).Post("/register", Register)
 		r.With(middlewares.JSONMiddleware[models.User]).Post("/login", Login)
 
-		r.With(middlewares.TextMiddleware).Post("/orders", PostOrders)
-		r.Get("/orders", stub)
+		r.With(middlewares.TextMiddleware).Post("/orders", CreateOrder)
+		r.Get("/orders", GetOrders)
 
 		r.Get("/balance", stub)
 		r.Post("/balance/withdraw", stub)

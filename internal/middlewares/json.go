@@ -54,3 +54,23 @@ func GetParsedJSONData[Model ModelParameter](w http.ResponseWriter, r *http.Requ
 
 	return data
 }
+
+func EncodeJSONResponse[Model interface{}](w http.ResponseWriter, data Model) {
+	w.Header().Set("Content-Type", "application/json")
+
+	resp, err := json.Marshal(data)
+
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error occurred during encoding json response: %s", err.Error()), http.StatusInternalServerError)
+		return
+	}
+
+	_, err = w.Write(resp)
+
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error occurred during writing response: %s", err.Error()), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}

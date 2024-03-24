@@ -19,6 +19,7 @@ const (
 	`
 )
 
+// todo delete
 func createAccrual(ctx context.Context, db DBExecutor, orderId string) error {
 	if _, err := db.Exec(ctx, InsertAccrualQuery, orderId); err != nil {
 		var e *pgconn.PgError

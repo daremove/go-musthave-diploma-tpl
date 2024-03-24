@@ -8,7 +8,7 @@ import (
 	"net/http"
 )
 
-func PostOrders(w http.ResponseWriter, r *http.Request) {
+func CreateOrder(w http.ResponseWriter, r *http.Request) {
 	orderId := middlewares.GetParsedTextData(w, r)
 
 	if len(orderId) == 0 {
@@ -41,4 +41,23 @@ func PostOrders(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusAccepted)
+}
+
+func GetOrders(w http.ResponseWriter, r *http.Request) {
+	orderService := middlewares.GetServiceFromContext[services.OrderService](w, r, middlewares.OrderServiceKey)
+	user := middlewares.GetUserFromContext(w, r)
+
+	orders, err := orderService.GetOrders(r.Context(), user.ID)
+
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error occurred during getting orders: %s", err.Error()), http.StatusInternalServerError)
+		return
+	}
+
+	if len(orders) == 0 {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	middlewares.EncodeJSONResponse(w, orders)
 }

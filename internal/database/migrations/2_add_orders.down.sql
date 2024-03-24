@@ -1,4 +1,4 @@
-DROP TABLE accruals;
+DROP TABLE accrual_flow;
 
 DROP TABLE orders;
 

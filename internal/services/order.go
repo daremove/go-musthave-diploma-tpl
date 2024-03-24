@@ -5,6 +5,8 @@ import (
 	"errors"
 	"github.com/daremove/go-musthave-diploma-tpl/tree/master/internal/database"
 	"github.com/daremove/go-musthave-diploma-tpl/tree/master/internal/models"
+	"github.com/daremove/go-musthave-diploma-tpl/tree/master/internal/utils"
+	"sort"
 	"strconv"
 )
 
@@ -20,7 +22,9 @@ type OrderService struct {
 type orderStorage interface {
 	CreateOrder(ctx context.Context, orderId string, userId string) error
 
-	FindOrder(ctx context.Context, orderId string) (*models.OrderDB, error)
+	FindOrder(ctx context.Context, orderId string) (*database.OrderDB, error)
+
+	FindOrdersWithAccrual(ctx context.Context, userId string) (*[]database.OrderWithAccrualDB, error)
 }
 
 func NewOrderService(storage orderStorage) *OrderService {
@@ -72,4 +76,33 @@ func (o *OrderService) CreateOrder(ctx context.Context, orderId, userId string) 
 	}
 
 	return nil
+}
+
+func (o *OrderService) GetOrders(ctx context.Context, userId string) ([]models.Order, error) {
+	orders, err := o.storage.FindOrdersWithAccrual(ctx, userId)
+
+	if err != nil {
+		return []models.Order{}, err
+	}
+
+	if orders == nil {
+		return []models.Order{}, nil
+	}
+
+	var result []models.Order
+
+	for _, order := range *orders {
+		result = append(result, models.Order{
+			ID:         order.ID,
+			Status:     order.Status.OrderStatus,
+			UploadedAt: utils.RFC3339Date{Time: order.UploadedAt},
+			Accrual:    &order.Accrual,
+		})
+	}
+
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].UploadedAt.Time.Before(result[j].UploadedAt.Time)
+	})
+
+	return result, nil
 }
