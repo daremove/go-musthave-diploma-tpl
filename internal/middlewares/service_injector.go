@@ -13,18 +13,21 @@ const (
 	AuthServiceKey key = iota
 	JwtServiceKey
 	OrderServiceKey
+	AccrualServiceKey
 )
 
 func ServiceInjectorMiddleware(
 	authService *services.AuthService,
 	jwtService *services.JWTService,
 	orderService *services.OrderService,
+	accrualService *services.AccrualService,
 ) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := context.WithValue(r.Context(), AuthServiceKey, authService)
 			ctx = context.WithValue(ctx, JwtServiceKey, jwtService)
 			ctx = context.WithValue(ctx, OrderServiceKey, orderService)
+			ctx = context.WithValue(ctx, AccrualServiceKey, accrualService)
 
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})

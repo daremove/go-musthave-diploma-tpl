@@ -25,7 +25,7 @@ func NewConfig() Config {
 	)
 
 	flag.StringVar(&endpoint, "a", "localhost:8090", "address and port to run server")
-	flag.StringVar(&accrualEndpoint, "r", "localhost:8080", "address and port to accrual run server")
+	flag.StringVar(&accrualEndpoint, "r", "http://localhost:8080", "address and port to accrual run server")
 	flag.StringVar(&dsn, "d", "", "data source name for database connection")
 	flag.Parse()
 

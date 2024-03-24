@@ -17,6 +17,7 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	orderService := middlewares.GetServiceFromContext[services.OrderService](w, r, middlewares.OrderServiceKey)
+	accrualService := middlewares.GetServiceFromContext[services.AccrualService](w, r, middlewares.AccrualServiceKey)
 
 	if !orderService.VerifyOrderId(orderId) {
 		http.Error(w, "Order id is invalid", http.StatusUnprocessableEntity)
@@ -39,6 +40,8 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("Error occurred during creating order: %s", err.Error()), http.StatusInternalServerError)
 		return
 	}
+
+	accrualService.CalculateAccrual(orderId)
 
 	w.WriteHeader(http.StatusAccepted)
 }

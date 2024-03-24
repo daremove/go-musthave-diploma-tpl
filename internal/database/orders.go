@@ -48,6 +48,14 @@ const (
 		GROUP BY 
 		    o.id
 	`
+	UpdateOrderStatusQuery = `
+		UPDATE
+			orders
+		SET
+			status = $2
+		WHERE
+		    id = $1
+	`
 )
 
 type OrderDB struct {
@@ -78,7 +86,7 @@ func (s *OrderStatusDB) Scan(value interface{}) error {
 	return nil
 }
 
-func (s *OrderStatusDB) Value() (driver.Value, error) {
+func (s OrderStatusDB) Value() (driver.Value, error) {
 	return string(s.OrderStatus), nil
 }
 
@@ -135,4 +143,12 @@ func (d *Database) FindOrdersWithAccrual(ctx context.Context, userId string) (*[
 	}
 
 	return &result, nil
+}
+
+func (d *Database) UpdateOrderStatus(ctx context.Context, orderId string, status OrderStatusDB) error {
+	if _, err := d.db.Exec(ctx, UpdateOrderStatusQuery, orderId, status); err != nil {
+		return err
+	}
+
+	return nil
 }

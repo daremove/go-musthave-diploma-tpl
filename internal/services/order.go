@@ -92,11 +92,12 @@ func (o *OrderService) GetOrders(ctx context.Context, userId string) ([]models.O
 	var result []models.Order
 
 	for _, order := range *orders {
+		accrual := order.Accrual
 		result = append(result, models.Order{
 			ID:         order.ID,
 			Status:     order.Status.OrderStatus,
 			UploadedAt: utils.RFC3339Date{Time: order.UploadedAt},
-			Accrual:    &order.Accrual,
+			Accrual:    &accrual,
 		})
 	}
 

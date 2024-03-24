@@ -6,6 +6,7 @@ import (
 	"github.com/daremove/go-musthave-diploma-tpl/tree/master/internal/http"
 	"github.com/daremove/go-musthave-diploma-tpl/tree/master/internal/logger"
 	"github.com/daremove/go-musthave-diploma-tpl/tree/master/internal/services"
+	"github.com/daremove/go-musthave-diploma-tpl/tree/master/internal/utils"
 	"log"
 )
 
@@ -25,10 +26,20 @@ func main() {
 
 	log.Printf("Running server on %s\n", config.endpoint)
 
+	jobQueueService := services.NewJobQueueService(ctx, 100, 2)
+	accrualService := services.NewAccrualService(db, jobQueueService, config.accrualEndpoint)
+
+	// todo add init jobs
+
+	utils.HandleTerminationProcess(func() {
+		jobQueueService.Shutdown()
+	})
+
 	router.New(
 		router.Config{Endpoint: config.endpoint},
-		*services.NewAuthService(db),
-		*services.NewJWTService(config.authSecretKey),
-		*services.NewOrderService(db),
+		services.NewAuthService(db),
+		services.NewJWTService(config.authSecretKey),
+		services.NewOrderService(db),
+		accrualService,
 	).Run()
 }

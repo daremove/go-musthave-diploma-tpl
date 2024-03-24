@@ -15,19 +15,21 @@ type Config struct {
 }
 
 type Router struct {
-	config       Config
-	authService  services.AuthService
-	jwtService   services.JWTService
-	orderService services.OrderService
+	config         Config
+	authService    *services.AuthService
+	jwtService     *services.JWTService
+	orderService   *services.OrderService
+	accrualService *services.AccrualService
 }
 
 func New(
 	config Config,
-	authService services.AuthService,
-	jwtService services.JWTService,
-	orderService services.OrderService,
+	authService *services.AuthService,
+	jwtService *services.JWTService,
+	orderService *services.OrderService,
+	accrualService *services.AccrualService,
 ) *Router {
-	return &Router{config, authService, jwtService, orderService}
+	return &Router{config, authService, jwtService, orderService, accrualService}
 }
 
 func stub(w http.ResponseWriter, r *http.Request) {
@@ -39,9 +41,10 @@ func (router *Router) get() chi.Router {
 
 	r.Use(
 		middlewares.ServiceInjectorMiddleware(
-			&router.authService,
-			&router.jwtService,
-			&router.orderService,
+			router.authService,
+			router.jwtService,
+			router.orderService,
+			router.accrualService,
 		),
 		logger.RequestLogger,
 		middlewares.AuthMiddleware().WithExcludedPaths(
