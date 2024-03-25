@@ -41,5 +41,6 @@ func main() {
 		services.NewJWTService(config.authSecretKey),
 		services.NewOrderService(db),
 		accrualService,
+		services.NewBalanceService(db),
 	).Run()
 }

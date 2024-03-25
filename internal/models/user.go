@@ -5,6 +5,7 @@ type User struct {
 	Password *string `json:"password"`
 }
 
+// todo mode to db layer
 type UserDB struct {
 	ID    string
 	Login string

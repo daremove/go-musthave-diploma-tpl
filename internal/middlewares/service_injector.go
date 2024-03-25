@@ -14,6 +14,7 @@ const (
 	JwtServiceKey
 	OrderServiceKey
 	AccrualServiceKey
+	BalanceServiceKey
 )
 
 func ServiceInjectorMiddleware(
@@ -21,6 +22,7 @@ func ServiceInjectorMiddleware(
 	jwtService *services.JWTService,
 	orderService *services.OrderService,
 	accrualService *services.AccrualService,
+	balanceService *services.BalanceService,
 ) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -28,6 +30,7 @@ func ServiceInjectorMiddleware(
 			ctx = context.WithValue(ctx, JwtServiceKey, jwtService)
 			ctx = context.WithValue(ctx, OrderServiceKey, orderService)
 			ctx = context.WithValue(ctx, AccrualServiceKey, accrualService)
+			ctx = context.WithValue(ctx, BalanceServiceKey, balanceService)
 
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})

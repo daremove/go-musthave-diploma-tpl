@@ -20,6 +20,7 @@ type Router struct {
 	jwtService     *services.JWTService
 	orderService   *services.OrderService
 	accrualService *services.AccrualService
+	balanceService *services.BalanceService
 }
 
 func New(
@@ -28,12 +29,16 @@ func New(
 	jwtService *services.JWTService,
 	orderService *services.OrderService,
 	accrualService *services.AccrualService,
+	balanceService *services.BalanceService,
 ) *Router {
-	return &Router{config, authService, jwtService, orderService, accrualService}
-}
-
-func stub(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Stub"))
+	return &Router{
+		config,
+		authService,
+		jwtService,
+		orderService,
+		accrualService,
+		balanceService,
+	}
 }
 
 func (router *Router) get() chi.Router {
@@ -45,6 +50,7 @@ func (router *Router) get() chi.Router {
 			router.jwtService,
 			router.orderService,
 			router.accrualService,
+			router.balanceService,
 		),
 		logger.RequestLogger,
 		middlewares.AuthMiddleware().WithExcludedPaths(
@@ -65,10 +71,10 @@ func (router *Router) get() chi.Router {
 		r.With(middlewares.TextMiddleware).Post("/orders", CreateOrder)
 		r.Get("/orders", GetOrders)
 
-		r.Get("/balance", stub)
-		r.Post("/balance/withdraw", stub)
+		r.Get("/balance", GetBalance)
+		r.With(middlewares.JSONMiddleware[models.Withdrawal]).Post("/balance/withdraw", CreateWithdrawal)
 
-		r.Post("/withdrawals", stub)
+		r.Get("/withdrawals", GetWithdrawals)
 	})
 
 	return r
