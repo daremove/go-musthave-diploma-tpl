@@ -10,7 +10,9 @@ import (
 	"strings"
 )
 
-const userField = "userField"
+type userFieldType string
+
+const userField userFieldType = "userField"
 
 type AuthMiddlewareConfig struct {
 	excludePaths []string
@@ -79,7 +81,7 @@ func (a *AuthMiddlewareConfig) Middleware(next http.Handler) http.Handler {
 
 		if err != nil {
 			if errors.Is(err, services.ErrUserIsNotExist) {
-				http.Error(w, fmt.Sprintf("User login %s doesn't exist", login), http.StatusConflict)
+				http.Error(w, fmt.Sprintf("UnknownUser login %s doesn't exist", login), http.StatusConflict)
 				return
 			}
 
@@ -91,8 +93,8 @@ func (a *AuthMiddlewareConfig) Middleware(next http.Handler) http.Handler {
 	})
 }
 
-func GetUserFromContext(w http.ResponseWriter, r *http.Request) *models.UserDB {
-	user, ok := r.Context().Value(userField).(*models.UserDB)
+func GetUserFromContext(w http.ResponseWriter, r *http.Request) *models.User {
+	user, ok := r.Context().Value(userField).(*models.User)
 
 	if !ok {
 		http.Error(w, "Could not retrieve user from context", http.StatusInternalServerError)

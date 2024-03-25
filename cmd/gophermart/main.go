@@ -24,12 +24,18 @@ func main() {
 		log.Fatalf("Database wasn't initialized due to %s", err)
 	}
 
+	if err := db.RunMigrations(); err != nil {
+		log.Fatalf("Migrations weren't run due to %s", err)
+	}
+
 	log.Printf("Running server on %s\n", config.endpoint)
 
 	jobQueueService := services.NewJobQueueService(ctx, 100, 2)
 	accrualService := services.NewAccrualService(db, jobQueueService, config.accrualEndpoint)
 
-	// todo add init jobs
+	if err := accrualService.StartCalculationAccruals(ctx); err != nil {
+		log.Fatalf("Starting calculation accruals was failed due to %s", err)
+	}
 
 	utils.HandleTerminationProcess(func() {
 		jobQueueService.Shutdown()

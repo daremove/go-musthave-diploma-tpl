@@ -13,25 +13,25 @@ type BalanceService struct {
 }
 
 type balanceStorage interface {
-	FindAccrualFlow(ctx context.Context, userId string) (*[]database.AccrualFlowItemDB, error)
+	FindAccrualFlow(ctx context.Context, userID string) (*[]database.AccrualFlowItemDB, error)
 
-	CreateWithdrawal(ctx context.Context, orderId, userId string, amount float64) error
+	CreateWithdrawal(ctx context.Context, orderID, userID string, amount float64) error
 
-	FindWithdrawalFlow(ctx context.Context, userId string) (*[]database.WithdrawalFlowItemDB, error)
+	FindWithdrawalFlow(ctx context.Context, userID string) (*[]database.WithdrawalFlowItemDB, error)
 }
 
 func NewBalanceService(storage balanceStorage) *BalanceService {
 	return &BalanceService{storage: storage}
 }
 
-func (b *BalanceService) GetUserBalance(ctx context.Context, userId string) (models.Balance, error) {
-	accrualFlow, err := b.storage.FindAccrualFlow(ctx, userId)
+func (b *BalanceService) GetUserBalance(ctx context.Context, userID string) (models.Balance, error) {
+	accrualFlow, err := b.storage.FindAccrualFlow(ctx, userID)
 
 	if err != nil {
 		return models.Balance{}, err
 	}
 
-	withdrawalFlow, err := b.storage.FindWithdrawalFlow(ctx, userId)
+	withdrawalFlow, err := b.storage.FindWithdrawalFlow(ctx, userID)
 
 	if err != nil {
 		return models.Balance{}, err
@@ -55,16 +55,16 @@ func (b *BalanceService) GetUserBalance(ctx context.Context, userId string) (mod
 	return models.Balance{Current: current - withdrawn, Withdrawn: withdrawn}, nil
 }
 
-func (b *BalanceService) CreateWithdrawal(ctx context.Context, orderId, userId string, amount float64) error {
-	if err := b.storage.CreateWithdrawal(ctx, orderId, userId, amount); err != nil {
+func (b *BalanceService) CreateWithdrawal(ctx context.Context, orderID, userID string, amount float64) error {
+	if err := b.storage.CreateWithdrawal(ctx, orderID, userID, amount); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (b *BalanceService) GetWithdrawalFlow(ctx context.Context, userId string) ([]models.WithdrawalFlowItem, error) {
-	withdrawalFlow, err := b.storage.FindWithdrawalFlow(ctx, userId)
+func (b *BalanceService) GetWithdrawalFlow(ctx context.Context, userID string) ([]models.WithdrawalFlowItem, error) {
+	withdrawalFlow, err := b.storage.FindWithdrawalFlow(ctx, userID)
 
 	if err != nil {
 		return []models.WithdrawalFlowItem{}, err

@@ -9,9 +9,9 @@ import (
 )
 
 func CreateOrder(w http.ResponseWriter, r *http.Request) {
-	orderId := middlewares.GetParsedTextData(w, r)
+	orderID := middlewares.GetParsedTextData(w, r)
 
-	if len(orderId) == 0 {
+	if len(orderID) == 0 {
 		http.Error(w, "Order id is empty", http.StatusUnprocessableEntity)
 		return
 	}
@@ -19,14 +19,14 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 	orderService := middlewares.GetServiceFromContext[services.OrderService](w, r, middlewares.OrderServiceKey)
 	accrualService := middlewares.GetServiceFromContext[services.AccrualService](w, r, middlewares.AccrualServiceKey)
 
-	if !orderService.VerifyOrderId(orderId) {
+	if !orderService.VerifyOrderID(orderID) {
 		http.Error(w, "Order id is invalid", http.StatusUnprocessableEntity)
 		return
 	}
 
 	user := middlewares.GetUserFromContext(w, r)
 
-	if err := orderService.CreateOrder(r.Context(), orderId, user.ID); err != nil {
+	if err := orderService.CreateOrder(r.Context(), orderID, user.ID); err != nil {
 		if errors.Is(err, services.ErrDuplicateOrderByOriginalUser) {
 			w.WriteHeader(http.StatusOK)
 			return
@@ -41,7 +41,7 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accrualService.CalculateAccrual(orderId)
+	accrualService.CalculateAccrual(orderID)
 
 	w.WriteHeader(http.StatusAccepted)
 }

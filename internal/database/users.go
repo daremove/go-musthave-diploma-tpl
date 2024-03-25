@@ -31,7 +31,11 @@ const (
 	`
 )
 
-func (d *Database) CreateUser(ctx context.Context, user models.UserDB) error {
+type UserDB struct {
+	models.User
+}
+
+func (d *Database) CreateUser(ctx context.Context, user UserDB) error {
 	if _, err := d.db.Exec(ctx, InsertUserQuery, user.Login, user.Hash); err != nil {
 		var e *pgconn.PgError
 		if errors.As(err, &e) && e.Code == pgerrcode.UniqueViolation {
@@ -44,8 +48,8 @@ func (d *Database) CreateUser(ctx context.Context, user models.UserDB) error {
 	return nil
 }
 
-func (d *Database) FindUser(ctx context.Context, login string) (*models.UserDB, error) {
-	user := &models.UserDB{}
+func (d *Database) FindUser(ctx context.Context, login string) (*UserDB, error) {
+	user := &UserDB{}
 
 	if err := d.db.QueryRow(ctx, SelectUserQuery, login).Scan(&user.ID, &user.Login, &user.Hash); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {

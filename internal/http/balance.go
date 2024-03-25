@@ -38,7 +38,7 @@ func CreateWithdrawal(w http.ResponseWriter, r *http.Request) {
 	orderService := middlewares.GetServiceFromContext[services.OrderService](w, r, middlewares.OrderServiceKey)
 	balanceService := middlewares.GetServiceFromContext[services.BalanceService](w, r, middlewares.BalanceServiceKey)
 
-	if !orderService.VerifyOrderId(*data.ID) {
+	if !orderService.VerifyOrderID(*data.ID) {
 		http.Error(w, "Order id is invalid", http.StatusUnprocessableEntity)
 		return
 	}

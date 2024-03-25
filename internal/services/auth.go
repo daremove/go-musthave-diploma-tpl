@@ -19,23 +19,23 @@ type AuthService struct {
 }
 
 type AuthStorage interface {
-	CreateUser(ctx context.Context, user models.UserDB) error
+	CreateUser(ctx context.Context, user database.UserDB) error
 
-	FindUser(ctx context.Context, login string) (*models.UserDB, error)
+	FindUser(ctx context.Context, login string) (*database.UserDB, error)
 }
 
 func NewAuthService(storage AuthStorage) *AuthService {
 	return &AuthService{storage}
 }
 
-func (auth *AuthService) Register(ctx context.Context, user models.User) error {
+func (auth *AuthService) Register(ctx context.Context, user models.UnknownUser) error {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(*user.Password), bcrypt.DefaultCost)
 
 	if err != nil {
 		return err
 	}
 
-	if err := auth.storage.CreateUser(ctx, models.UserDB{Login: *user.Login, Hash: string(hashedPassword)}); err != nil {
+	if err := auth.storage.CreateUser(ctx, database.UserDB{User: models.User{Login: *user.Login, Hash: string(hashedPassword)}}); err != nil {
 		if errors.Is(err, database.ErrDuplicateUser) {
 			return ErrUserIsAlreadyRegistered
 		}
@@ -46,7 +46,7 @@ func (auth *AuthService) Register(ctx context.Context, user models.User) error {
 	return nil
 }
 
-func (auth *AuthService) Login(ctx context.Context, user models.User) error {
+func (auth *AuthService) Login(ctx context.Context, user models.UnknownUser) error {
 	u, err := auth.storage.FindUser(ctx, *user.Login)
 
 	if err != nil {
@@ -68,7 +68,7 @@ func (auth *AuthService) Login(ctx context.Context, user models.User) error {
 	return nil
 }
 
-func (auth *AuthService) GetUser(ctx context.Context, login string) (*models.UserDB, error) {
+func (auth *AuthService) GetUser(ctx context.Context, login string) (*models.User, error) {
 	user, err := auth.storage.FindUser(ctx, login)
 
 	if err != nil {
@@ -79,5 +79,5 @@ func (auth *AuthService) GetUser(ctx context.Context, login string) (*models.Use
 		return nil, ErrUserIsNotExist
 	}
 
-	return user, nil
+	return &user.User, nil
 }

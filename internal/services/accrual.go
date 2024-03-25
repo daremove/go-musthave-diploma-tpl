@@ -22,9 +22,11 @@ type AccrualService struct {
 }
 
 type accrualStorage interface {
-	UpdateOrderStatus(ctx context.Context, orderId string, status database.OrderStatusDB) error
+	UpdateOrderStatus(ctx context.Context, orderID string, status database.OrderStatusDB) error
 
-	CreateAccrual(ctx context.Context, orderId string, amount float64) error
+	CreateAccrual(ctx context.Context, orderID string, amount float64) error
+
+	FindAllUnprocessedOrders(ctx context.Context) (*[]database.OrderDB, error)
 }
 
 type accrualJobQueueService interface {
@@ -43,13 +45,13 @@ func NewAccrualService(storage accrualStorage, jobQueueService accrualJobQueueSe
 	}
 }
 
-func (as *AccrualService) CalculateAccrual(orderId string) {
+func (as *AccrualService) CalculateAccrual(orderID string) {
 	as.jobQueueService.Enqueue(func(ctx context.Context) {
-		data, retryAfter, err := as.fetchAccrualData(orderId)
+		data, retryAfter, err := as.fetchAccrualData(orderID)
 
 		if err != nil {
 			if errors.Is(err, errNoOrder) {
-				logger.Log.Info("order isn't registered", zap.String("orderId", orderId))
+				logger.Log.Info("order isn't registered", zap.String("orderID", orderID))
 				// todo maybe need to enqueue
 				return
 			}
@@ -60,25 +62,25 @@ func (as *AccrualService) CalculateAccrual(orderId string) {
 		}
 
 		if retryAfter > 0 {
-			logger.Log.Info("got retryAfter", zap.Int("retryAfter", retryAfter), zap.String("orderId", orderId))
+			logger.Log.Info("got retryAfter", zap.Int("retryAfter", retryAfter), zap.String("orderID", orderID))
 			as.jobQueueService.PauseAndResume(time.Second * time.Duration(retryAfter))
 			as.jobQueueService.Enqueue(func(ctx context.Context) {
-				as.CalculateAccrual(orderId)
+				as.CalculateAccrual(orderID)
 			})
-			logger.Log.Info("enqueued new job after pausing", zap.Int("retryAfter", retryAfter), zap.String("orderId", orderId))
+			logger.Log.Info("enqueued new job after pausing", zap.Int("retryAfter", retryAfter), zap.String("orderID", orderID))
 			return
 		}
 
 		logger.Log.Info("got accrual data",
-			zap.String("orderId", orderId),
+			zap.String("orderID", orderID),
 			zap.String("status", string(data.Status)),
 		)
 
 		if data.Status == AccrualStatusRegistered {
 			as.jobQueueService.ScheduleJob(func(ctx context.Context) {
-				as.CalculateAccrual(orderId)
+				as.CalculateAccrual(orderID)
 			}, time.Minute)
-			logger.Log.Info("enqueued new schedule job", zap.String("orderId", orderId))
+			logger.Log.Info("enqueued new schedule job", zap.String("orderID", orderID))
 
 			return
 		}
@@ -86,13 +88,13 @@ func (as *AccrualService) CalculateAccrual(orderId string) {
 		if data.Status == AccrualStatusProcessed ||
 			data.Status == AccrualStatusProcessing ||
 			data.Status == AccrualStatusInvalid {
-			if err := as.storage.UpdateOrderStatus(ctx, orderId, database.OrderStatusDB{OrderStatus: models.OrderStatus(data.Status)}); err != nil {
+			if err := as.storage.UpdateOrderStatus(ctx, orderID, database.OrderStatusDB{OrderStatus: models.OrderStatus(data.Status)}); err != nil {
 				logger.Log.Error("failed to update status", zap.Error(err))
 				return
 			}
 
 			logger.Log.Info("updated order status",
-				zap.String("orderId", orderId),
+				zap.String("orderID", orderID),
 				zap.String("status", string(data.Status)),
 			)
 
@@ -100,13 +102,13 @@ func (as *AccrualService) CalculateAccrual(orderId string) {
 				return
 			}
 
-			if err := as.storage.CreateAccrual(ctx, orderId, *data.Accrual); err != nil {
+			if err := as.storage.CreateAccrual(ctx, orderID, *data.Accrual); err != nil {
 				logger.Log.Error("failed to create accrual", zap.Error(err))
 				return
 			}
 
 			logger.Log.Info("saved accrual value",
-				zap.String("orderId", orderId),
+				zap.String("orderID", orderID),
 				zap.String("status", string(data.Status)),
 				zap.Float64("accrual", *data.Accrual),
 			)
@@ -116,6 +118,24 @@ func (as *AccrualService) CalculateAccrual(orderId string) {
 
 		logger.Log.Error("status isn't defined", zap.String("status", string(data.Status)))
 	})
+}
+
+func (as *AccrualService) StartCalculationAccruals(ctx context.Context) error {
+	orders, err := as.storage.FindAllUnprocessedOrders(ctx)
+
+	if err != nil {
+		return err
+	}
+
+	if orders == nil {
+		return nil
+	}
+
+	for _, order := range *orders {
+		as.CalculateAccrual(order.ID)
+	}
+
+	return nil
 }
 
 type accrualOrderStatus string
@@ -140,9 +160,9 @@ var (
 
 const defaultRetryAfterDuration = 60
 
-func (as *AccrualService) fetchAccrualData(orderId string) (data *accrualDataResponse, retryAfter int, err error) {
+func (as *AccrualService) fetchAccrualData(orderID string) (data *accrualDataResponse, retryAfter int, err error) {
 	client := &http.Client{}
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/api/orders/%s", as.externalEndpoint, orderId), nil)
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/api/orders/%s", as.externalEndpoint, orderID), nil)
 
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to create request: %w", err)
@@ -153,6 +173,8 @@ func (as *AccrualService) fetchAccrualData(orderId string) (data *accrualDataRes
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to send data by using GET method: %w", err)
 	}
+
+	defer res.Body.Close()
 
 	if res.StatusCode == http.StatusNoContent {
 		return nil, 0, errNoOrder

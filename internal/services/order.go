@@ -20,23 +20,23 @@ type OrderService struct {
 }
 
 type orderStorage interface {
-	CreateOrder(ctx context.Context, orderId string, userId string) error
+	CreateOrder(ctx context.Context, orderID string, userID string) error
 
-	FindOrder(ctx context.Context, orderId string) (*database.OrderDB, error)
+	FindOrder(ctx context.Context, orderID string) (*database.OrderDB, error)
 
-	FindOrdersWithAccrual(ctx context.Context, userId string) (*[]database.OrderWithAccrualDB, error)
+	FindOrdersWithAccrual(ctx context.Context, userID string) (*[]database.OrderWithAccrualDB, error)
 }
 
 func NewOrderService(storage orderStorage) *OrderService {
 	return &OrderService{storage}
 }
 
-func (o *OrderService) VerifyOrderId(orderId string) bool {
+func (o *OrderService) VerifyOrderID(orderID string) bool {
 	var sum int
 	var alternate bool
 
-	for i := len(orderId) - 1; i >= 0; i-- {
-		digit, err := strconv.Atoi(string(orderId[i]))
+	for i := len(orderID) - 1; i >= 0; i-- {
+		digit, err := strconv.Atoi(string(orderID[i]))
 		if err != nil {
 			return false
 		}
@@ -56,19 +56,19 @@ func (o *OrderService) VerifyOrderId(orderId string) bool {
 	return sum%10 == 0
 }
 
-func (o *OrderService) CreateOrder(ctx context.Context, orderId, userId string) error {
-	if err := o.storage.CreateOrder(ctx, orderId, userId); err != nil {
+func (o *OrderService) CreateOrder(ctx context.Context, orderID, userID string) error {
+	if err := o.storage.CreateOrder(ctx, orderID, userID); err != nil {
 		if !errors.Is(err, database.ErrDuplicateOrder) {
 			return err
 		}
 
-		order, errOrder := o.storage.FindOrder(ctx, orderId)
+		order, errOrder := o.storage.FindOrder(ctx, orderID)
 
 		if errOrder != nil {
 			return errOrder
 		}
 
-		if order.UserId == userId {
+		if order.UserID == userID {
 			return ErrDuplicateOrderByOriginalUser
 		}
 
@@ -78,8 +78,8 @@ func (o *OrderService) CreateOrder(ctx context.Context, orderId, userId string) 
 	return nil
 }
 
-func (o *OrderService) GetOrders(ctx context.Context, userId string) ([]models.Order, error) {
-	orders, err := o.storage.FindOrdersWithAccrual(ctx, userId)
+func (o *OrderService) GetOrders(ctx context.Context, userID string) ([]models.Order, error) {
+	orders, err := o.storage.FindOrdersWithAccrual(ctx, userID)
 
 	if err != nil {
 		return []models.Order{}, err

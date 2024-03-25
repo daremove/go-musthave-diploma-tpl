@@ -10,13 +10,12 @@ import (
 )
 
 // todo add invalidation prev token
-// todo remove duplication
 func Login(w http.ResponseWriter, r *http.Request) {
-	data := middlewares.GetParsedJSONData[models.User](w, r)
+	data := middlewares.GetParsedJSONData[models.UnknownUser](w, r)
 	authService := middlewares.GetServiceFromContext[services.AuthService](w, r, middlewares.AuthServiceKey)
 	jwtService := middlewares.GetServiceFromContext[services.JWTService](w, r, middlewares.JwtServiceKey)
 
-	if data.Login == nil || data.Password == nil {
+	if ok := IsUnknownUserDataValid(data); !ok {
 		http.Error(w, "Request doesn't contain login or password", http.StatusBadRequest)
 		return
 	}

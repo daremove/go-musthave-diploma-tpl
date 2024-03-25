@@ -1,12 +1,11 @@
 package models
 
-type User struct {
+type UnknownUser struct {
 	Login    *string `json:"login"`
 	Password *string `json:"password"`
 }
 
-// todo mode to db layer
-type UserDB struct {
+type User struct {
 	ID    string
 	Login string
 	Hash  string

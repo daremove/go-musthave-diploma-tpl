@@ -9,13 +9,28 @@ import (
 	"net/http"
 )
 
+func IsUnknownUserDataValid(data models.UnknownUser) bool {
+	if data.Login == nil || data.Password == nil {
+		return false
+	}
+
+	return true
+}
+
 func Register(w http.ResponseWriter, r *http.Request) {
-	data := middlewares.GetParsedJSONData[models.User](w, r)
+	data := middlewares.GetParsedJSONData[models.UnknownUser](w, r)
 	authService := middlewares.GetServiceFromContext[services.AuthService](w, r, middlewares.AuthServiceKey)
 	jwtService := middlewares.GetServiceFromContext[services.JWTService](w, r, middlewares.JwtServiceKey)
 
-	if data.Login == nil || data.Password == nil {
+	if ok := IsUnknownUserDataValid(data); !ok {
 		http.Error(w, "Request doesn't contain login or password", http.StatusBadRequest)
+		return
+	}
+
+	token, err := jwtService.GenerateJWT(*data.Login)
+
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error occurred during generating jwt token: %s", err.Error()), http.StatusInternalServerError)
 		return
 	}
 
@@ -26,14 +41,6 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		}
 
 		http.Error(w, fmt.Sprintf("Error occurred during registration: %s", err.Error()), http.StatusInternalServerError)
-		return
-	}
-
-	// todo think about atomicity
-	token, err := jwtService.GenerateJWT(*data.Login)
-
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Error occurred during generating jwt token: %s", err.Error()), http.StatusInternalServerError)
 		return
 	}
 

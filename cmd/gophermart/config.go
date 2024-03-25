@@ -1,7 +1,10 @@
 package main
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"flag"
+	"log"
 	"os"
 )
 
@@ -12,6 +15,15 @@ type Config struct {
 	logLevel        string
 	env             string
 	authSecretKey   string
+}
+
+func generateRandomString(length int) string {
+	b := make([]byte, length)
+	_, err := rand.Read(b)
+	if err != nil {
+		panic(err)
+	}
+	return base64.StdEncoding.EncodeToString(b)
 }
 
 func NewConfig() Config {
@@ -57,10 +69,11 @@ func NewConfig() Config {
 		authSecretKey = secret
 	} else {
 		if env == "production" {
-			panic("Auth secret key should be set for production environment")
+			authSecretKey = generateRandomString(10)
+			log.Printf("WARNING: AUTH_SECRET_KEY has to be defined for production environment\n")
+		} else {
+			authSecretKey = "development-key"
 		}
-
-		authSecretKey = "development-key"
 	}
 
 	return Config{

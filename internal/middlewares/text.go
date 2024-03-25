@@ -7,7 +7,9 @@ import (
 	"net/http"
 )
 
-const parsedTextDataField = "parsedTextDataField"
+type parsedTextDataFieldType string
+
+const parsedTextDataField parsedTextDataFieldType = "parsedTextDataField"
 
 func TextMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

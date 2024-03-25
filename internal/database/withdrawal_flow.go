@@ -29,18 +29,18 @@ type WithdrawalFlowItemDB struct {
 	ProcessedAt time.Time
 }
 
-func (d *Database) CreateWithdrawal(ctx context.Context, orderId, userId string, amount float64) error {
-	if _, err := d.db.Exec(ctx, InsertWithdrawalQuery, orderId, userId, amount); err != nil {
+func (d *Database) CreateWithdrawal(ctx context.Context, orderID, userID string, amount float64) error {
+	if _, err := d.db.Exec(ctx, InsertWithdrawalQuery, orderID, userID, amount); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (d *Database) FindWithdrawalFlow(ctx context.Context, userId string) (*[]WithdrawalFlowItemDB, error) {
+func (d *Database) FindWithdrawalFlow(ctx context.Context, userID string) (*[]WithdrawalFlowItemDB, error) {
 	var result []WithdrawalFlowItemDB
 
-	rows, err := d.db.Query(ctx, SelectWithdrawalFlowQuery, userId)
+	rows, err := d.db.Query(ctx, SelectWithdrawalFlowQuery, userID)
 
 	if err != nil {
 		return nil, err

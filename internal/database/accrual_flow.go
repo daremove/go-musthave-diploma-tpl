@@ -25,23 +25,23 @@ const (
 )
 
 type AccrualFlowItemDB struct {
-	OrderId     string
+	OrderID     string
 	Amount      float64
 	ProcessedAt time.Time
 }
 
-func (d *Database) CreateAccrual(ctx context.Context, orderId string, amount float64) error {
-	if _, err := d.db.Exec(ctx, InsertAccrualQuery, orderId, amount); err != nil {
+func (d *Database) CreateAccrual(ctx context.Context, orderID string, amount float64) error {
+	if _, err := d.db.Exec(ctx, InsertAccrualQuery, orderID, amount); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (d *Database) FindAccrualFlow(ctx context.Context, userId string) (*[]AccrualFlowItemDB, error) {
+func (d *Database) FindAccrualFlow(ctx context.Context, userID string) (*[]AccrualFlowItemDB, error) {
 	var result []AccrualFlowItemDB
 
-	rows, err := d.db.Query(ctx, SelectAccrualFlowQuery, userId)
+	rows, err := d.db.Query(ctx, SelectAccrualFlowQuery, userID)
 
 	if err != nil {
 		return nil, err
@@ -52,7 +52,7 @@ func (d *Database) FindAccrualFlow(ctx context.Context, userId string) (*[]Accru
 	for rows.Next() {
 		var item AccrualFlowItemDB
 
-		if err := rows.Scan(&item.OrderId, &item.Amount, &item.ProcessedAt); err != nil {
+		if err := rows.Scan(&item.OrderID, &item.Amount, &item.ProcessedAt); err != nil {
 			return nil, err
 		}
 

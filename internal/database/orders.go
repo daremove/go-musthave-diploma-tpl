@@ -56,11 +56,22 @@ const (
 		WHERE
 		    id = $1
 	`
+	SelectAllUnprocessedOrdersQuery = `
+		SELECT
+			id,
+			user_id,
+			status,
+			uploaded_at
+		FROM
+		    orders
+		WHERE
+		    status NOT IN ('INVALID', 'PROCESSED')
+	`
 )
 
 type OrderDB struct {
 	ID         string
-	UserId     string
+	UserID     string
 	Status     OrderStatusDB
 	UploadedAt time.Time
 }
@@ -90,8 +101,8 @@ func (s OrderStatusDB) Value() (driver.Value, error) {
 	return string(s.OrderStatus), nil
 }
 
-func (d *Database) CreateOrder(ctx context.Context, orderId, userId string) error {
-	if _, err := d.db.Exec(ctx, InsertOrderQuery, orderId, userId); err != nil {
+func (d *Database) CreateOrder(ctx context.Context, orderID, userID string) error {
+	if _, err := d.db.Exec(ctx, InsertOrderQuery, orderID, userID); err != nil {
 		var e *pgconn.PgError
 		if errors.As(err, &e) && e.Code == pgerrcode.UniqueViolation {
 			return ErrDuplicateOrder
@@ -103,10 +114,10 @@ func (d *Database) CreateOrder(ctx context.Context, orderId, userId string) erro
 	return nil
 }
 
-func (d *Database) FindOrder(ctx context.Context, orderId string) (*OrderDB, error) {
+func (d *Database) FindOrder(ctx context.Context, orderID string) (*OrderDB, error) {
 	order := &OrderDB{}
 
-	if err := d.db.QueryRow(ctx, SelectOrderQuery, orderId).Scan(&order.ID, &order.UserId, &order.Status, &order.UploadedAt); err != nil {
+	if err := d.db.QueryRow(ctx, SelectOrderQuery, orderID).Scan(&order.ID, &order.UserID, &order.Status, &order.UploadedAt); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
 		}
@@ -117,10 +128,10 @@ func (d *Database) FindOrder(ctx context.Context, orderId string) (*OrderDB, err
 	return order, nil
 }
 
-func (d *Database) FindOrdersWithAccrual(ctx context.Context, userId string) (*[]OrderWithAccrualDB, error) {
+func (d *Database) FindOrdersWithAccrual(ctx context.Context, userID string) (*[]OrderWithAccrualDB, error) {
 	var result []OrderWithAccrualDB
 
-	rows, err := d.db.Query(ctx, SelectOrdersWithAccrualQuery, userId)
+	rows, err := d.db.Query(ctx, SelectOrdersWithAccrualQuery, userID)
 
 	if err != nil {
 		return nil, err
@@ -131,7 +142,7 @@ func (d *Database) FindOrdersWithAccrual(ctx context.Context, userId string) (*[
 	for rows.Next() {
 		var item OrderWithAccrualDB
 
-		if err := rows.Scan(&item.ID, &item.UserId, &item.Status, &item.UploadedAt, &item.Accrual); err != nil {
+		if err := rows.Scan(&item.ID, &item.UserID, &item.Status, &item.UploadedAt, &item.Accrual); err != nil {
 			return nil, err
 		}
 
@@ -145,10 +156,38 @@ func (d *Database) FindOrdersWithAccrual(ctx context.Context, userId string) (*[
 	return &result, nil
 }
 
-func (d *Database) UpdateOrderStatus(ctx context.Context, orderId string, status OrderStatusDB) error {
-	if _, err := d.db.Exec(ctx, UpdateOrderStatusQuery, orderId, status); err != nil {
+func (d *Database) UpdateOrderStatus(ctx context.Context, orderID string, status OrderStatusDB) error {
+	if _, err := d.db.Exec(ctx, UpdateOrderStatusQuery, orderID, status); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func (d *Database) FindAllUnprocessedOrders(ctx context.Context) (*[]OrderDB, error) {
+	var result []OrderDB
+
+	rows, err := d.db.Query(ctx, SelectAllUnprocessedOrdersQuery)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var item OrderDB
+
+		if err := rows.Scan(&item.ID, &item.UserID, &item.Status, &item.UploadedAt); err != nil {
+			return nil, err
+		}
+
+		result = append(result, item)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return &result, nil
 }

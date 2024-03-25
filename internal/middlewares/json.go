@@ -8,7 +8,9 @@ import (
 	"net/http"
 )
 
-const parsedJSONDataField = "parsedJSONDataField"
+type parsedJSONDataFieldType string
+
+const parsedJSONDataField parsedJSONDataFieldType = "parsedJSONDataField"
 
 type ModelParameter interface {
 	interface{} | []interface{}
