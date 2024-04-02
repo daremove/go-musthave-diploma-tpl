@@ -6,7 +6,7 @@ SERVER_BINARY_NAME=gophermart
 ACCRUAL_SOURCE_BIN_PATH=./cmd/accrual/accrual_darwin_arm64
 ACCRUAL_BINARY_NAME=accrual
 
-.PHONY: all build run clean stop migrate-up-% migrate-down-%
+.PHONY: all build run clean stop migrate-up-% migrate-down-% format test generate
 
 all: build
 
@@ -39,3 +39,12 @@ migrate-up-%:
 migrate-down-%:
 	@echo "Migrating down $*"
 	@migrate -path ./internal/database/migrations -database postgres://localhost:5432/gophermart?sslmode=disable down $*
+
+format:
+	@goimports -l -w  .
+
+test:
+	@go test -count=1 -cover ./...
+
+generate:
+	@go generate ./...

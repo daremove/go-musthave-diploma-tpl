@@ -2,12 +2,13 @@ package main
 
 import (
 	"context"
+	"log"
+
 	"github.com/daremove/go-musthave-diploma-tpl/tree/master/internal/database"
-	"github.com/daremove/go-musthave-diploma-tpl/tree/master/internal/http"
+	router "github.com/daremove/go-musthave-diploma-tpl/tree/master/internal/http"
 	"github.com/daremove/go-musthave-diploma-tpl/tree/master/internal/logger"
 	"github.com/daremove/go-musthave-diploma-tpl/tree/master/internal/services"
 	"github.com/daremove/go-musthave-diploma-tpl/tree/master/internal/utils"
-	"log"
 )
 
 func main() {

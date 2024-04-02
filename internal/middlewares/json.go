@@ -16,11 +16,6 @@ type ModelParameter interface {
 	interface{} | []interface{}
 }
 
-type RequestWithModel[Model ModelParameter] struct {
-	*http.Request
-	data Model
-}
-
 func JSONMiddleware[Model ModelParameter](next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Content-Type") != "application/json" {

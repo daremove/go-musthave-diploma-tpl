@@ -2,10 +2,11 @@ package services
 
 import (
 	"context"
+	"sort"
+
 	"github.com/daremove/go-musthave-diploma-tpl/tree/master/internal/database"
 	"github.com/daremove/go-musthave-diploma-tpl/tree/master/internal/models"
 	"github.com/daremove/go-musthave-diploma-tpl/tree/master/internal/utils"
-	"sort"
 )
 
 type BalanceService struct {
@@ -74,14 +75,14 @@ func (b *BalanceService) GetWithdrawalFlow(ctx context.Context, userID string) (
 		return []models.WithdrawalFlowItem{}, nil
 	}
 
-	var result []models.WithdrawalFlowItem
+	result := make([]models.WithdrawalFlowItem, len(*withdrawalFlow))
 
-	for _, item := range *withdrawalFlow {
-		result = append(result, models.WithdrawalFlowItem{
+	for i, item := range *withdrawalFlow {
+		result[i] = models.WithdrawalFlowItem{
 			OrderID:     item.OrderID,
 			Sum:         item.Amount,
 			ProcessedAt: utils.RFC3339Date{Time: item.ProcessedAt},
-		})
+		}
 	}
 
 	sort.Slice(result, func(i, j int) bool {

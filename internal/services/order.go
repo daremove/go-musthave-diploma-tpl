@@ -3,11 +3,12 @@ package services
 import (
 	"context"
 	"errors"
+	"sort"
+	"strconv"
+
 	"github.com/daremove/go-musthave-diploma-tpl/tree/master/internal/database"
 	"github.com/daremove/go-musthave-diploma-tpl/tree/master/internal/models"
 	"github.com/daremove/go-musthave-diploma-tpl/tree/master/internal/utils"
-	"sort"
-	"strconv"
 )
 
 var (
@@ -89,16 +90,16 @@ func (o *OrderService) GetOrders(ctx context.Context, userID string) ([]models.O
 		return []models.Order{}, nil
 	}
 
-	var result []models.Order
+	result := make([]models.Order, len(*orders))
 
-	for _, order := range *orders {
+	for i, order := range *orders {
 		accrual := order.Accrual
-		result = append(result, models.Order{
+		result[i] = models.Order{
 			ID:         order.ID,
 			Status:     order.Status.OrderStatus,
 			UploadedAt: utils.RFC3339Date{Time: order.UploadedAt},
 			Accrual:    &accrual,
-		})
+		}
 	}
 
 	sort.Slice(result, func(i, j int) bool {

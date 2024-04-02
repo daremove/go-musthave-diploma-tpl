@@ -36,7 +36,7 @@ func (jqs *JobQueueService) start(ctx context.Context, workers int) {
 	for i := 0; i < workers; i++ {
 		jqs.wg.Add(1)
 
-		go func(workerID int) {
+		go func() {
 			defer jqs.wg.Done()
 
 			for {
@@ -55,7 +55,7 @@ func (jqs *JobQueueService) start(ctx context.Context, workers int) {
 					return
 				}
 			}
-		}(i)
+		}()
 	}
 }
 

@@ -5,11 +5,12 @@ import (
 	"database/sql/driver"
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/daremove/go-musthave-diploma-tpl/tree/master/internal/models"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
-	"time"
 )
 
 var (

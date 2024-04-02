@@ -2,17 +2,17 @@ package router
 
 import (
 	"fmt"
+	"net/http"
+
 	"github.com/daremove/go-musthave-diploma-tpl/tree/master/internal/middlewares"
 	"github.com/daremove/go-musthave-diploma-tpl/tree/master/internal/models"
-	"github.com/daremove/go-musthave-diploma-tpl/tree/master/internal/services"
-	"net/http"
 )
 
 func GetBalance(w http.ResponseWriter, r *http.Request) {
-	balanceService := middlewares.GetServiceFromContext[services.BalanceService](w, r, middlewares.BalanceServiceKey)
+	balanceService := middlewares.GetServiceFromContext[models.BalanceService](w, r, middlewares.BalanceServiceKey)
 	user := middlewares.GetUserFromContext(w, r)
 
-	balance, err := balanceService.GetUserBalance(r.Context(), user.ID)
+	balance, err := (*balanceService).GetUserBalance(r.Context(), user.ID)
 
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error occurred during getting balance: %s", err.Error()), http.StatusInternalServerError)
@@ -35,16 +35,16 @@ func CreateWithdrawal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	orderService := middlewares.GetServiceFromContext[services.OrderService](w, r, middlewares.OrderServiceKey)
-	balanceService := middlewares.GetServiceFromContext[services.BalanceService](w, r, middlewares.BalanceServiceKey)
+	orderService := middlewares.GetServiceFromContext[models.OrderService](w, r, middlewares.OrderServiceKey)
+	balanceService := middlewares.GetServiceFromContext[models.BalanceService](w, r, middlewares.BalanceServiceKey)
 
-	if !orderService.VerifyOrderID(*data.ID) {
+	if !(*orderService).VerifyOrderID(*data.ID) {
 		http.Error(w, "Order id is invalid", http.StatusUnprocessableEntity)
 		return
 	}
 
 	user := middlewares.GetUserFromContext(w, r)
-	balance, err := balanceService.GetUserBalance(r.Context(), user.ID)
+	balance, err := (*balanceService).GetUserBalance(r.Context(), user.ID)
 
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error occurred during getting balance: %s", err.Error()), http.StatusInternalServerError)
@@ -56,7 +56,7 @@ func CreateWithdrawal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := balanceService.CreateWithdrawal(r.Context(), *data.ID, user.ID, *data.Sum); err != nil {
+	if err := (*balanceService).CreateWithdrawal(r.Context(), *data.ID, user.ID, *data.Sum); err != nil {
 		http.Error(w, fmt.Sprintf("Error occurred during creating withdrawal: %s", err.Error()), http.StatusInternalServerError)
 		return
 	}
@@ -65,10 +65,10 @@ func CreateWithdrawal(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetWithdrawals(w http.ResponseWriter, r *http.Request) {
-	balanceService := middlewares.GetServiceFromContext[services.BalanceService](w, r, middlewares.BalanceServiceKey)
+	balanceService := middlewares.GetServiceFromContext[models.BalanceService](w, r, middlewares.BalanceServiceKey)
 	user := middlewares.GetUserFromContext(w, r)
 
-	withdrawalFlow, err := balanceService.GetWithdrawalFlow(r.Context(), user.ID)
+	withdrawalFlow, err := (*balanceService).GetWithdrawalFlow(r.Context(), user.ID)
 
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error occurred during getting withdrawals: %s", err.Error()), http.StatusInternalServerError)

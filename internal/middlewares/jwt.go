@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/daremove/go-musthave-diploma-tpl/tree/master/internal/models"
-	"github.com/daremove/go-musthave-diploma-tpl/tree/master/internal/services"
 	"net/http"
 	"strings"
+
+	"github.com/daremove/go-musthave-diploma-tpl/tree/master/internal/models"
+	"github.com/daremove/go-musthave-diploma-tpl/tree/master/internal/services"
 )
 
 type userFieldType string
@@ -36,8 +37,8 @@ func (a *AuthMiddlewareConfig) Middleware(next http.Handler) http.Handler {
 			}
 		}
 
-		authService := GetServiceFromContext[services.AuthService](w, r, AuthServiceKey)
-		jwtService := GetServiceFromContext[services.JWTService](w, r, JwtServiceKey)
+		authService := GetServiceFromContext[models.AuthService](w, r, AuthServiceKey)
+		jwtService := GetServiceFromContext[models.JWTService](w, r, JwtServiceKey)
 
 		authHeader := r.Header.Get("Authorization")
 
@@ -53,7 +54,7 @@ func (a *AuthMiddlewareConfig) Middleware(next http.Handler) http.Handler {
 			return
 		}
 
-		token, err := jwtService.ValidateToken(tokenString)
+		token, err := (*jwtService).ValidateToken(tokenString)
 
 		if err != nil {
 			if errors.Is(err, services.ErrTokenIsInvalid) {
@@ -77,7 +78,7 @@ func (a *AuthMiddlewareConfig) Middleware(next http.Handler) http.Handler {
 			return
 		}
 
-		user, err := authService.GetUser(r.Context(), login)
+		user, err := (*authService).GetUser(r.Context(), login)
 
 		if err != nil {
 			if errors.Is(err, services.ErrUserIsNotExist) {

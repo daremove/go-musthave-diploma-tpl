@@ -1,13 +1,13 @@
 package router
 
 import (
+	"log"
+	"net/http"
+
 	"github.com/daremove/go-musthave-diploma-tpl/tree/master/internal/logger"
 	"github.com/daremove/go-musthave-diploma-tpl/tree/master/internal/middlewares"
 	"github.com/daremove/go-musthave-diploma-tpl/tree/master/internal/models"
-	"github.com/daremove/go-musthave-diploma-tpl/tree/master/internal/services"
 	"github.com/go-chi/chi/v5"
-	"log"
-	"net/http"
 )
 
 type Config struct {
@@ -16,20 +16,20 @@ type Config struct {
 
 type Router struct {
 	config         Config
-	authService    *services.AuthService
-	jwtService     *services.JWTService
-	orderService   *services.OrderService
-	accrualService *services.AccrualService
-	balanceService *services.BalanceService
+	authService    models.AuthService
+	jwtService     models.JWTService
+	orderService   models.OrderService
+	accrualService models.AccrualService
+	balanceService models.BalanceService
 }
 
 func New(
 	config Config,
-	authService *services.AuthService,
-	jwtService *services.JWTService,
-	orderService *services.OrderService,
-	accrualService *services.AccrualService,
-	balanceService *services.BalanceService,
+	authService models.AuthService,
+	jwtService models.JWTService,
+	orderService models.OrderService,
+	accrualService models.AccrualService,
+	balanceService models.BalanceService,
 ) *Router {
 	return &Router{
 		config,
@@ -58,11 +58,6 @@ func (router *Router) get() chi.Router {
 			"/api/user/login",
 		).Middleware,
 	)
-	//r.Use(middleware.NewCompressor(flate.DefaultCompression).Handler)
-	//r.Use(dataintergity.NewMiddleware(dataintergity.DataIntegrityMiddlewareConfig{
-	//	SigningKey: router.config.SigningKey,
-	//}))
-	//r.Use(gzipm.GzipMiddleware)
 
 	r.Route("/api/user", func(r chi.Router) {
 		r.With(middlewares.JSONMiddleware[models.UnknownUser]).Post("/register", Register)
